@@ -14,7 +14,7 @@ function generateTrackingNumber() {
 
 if (isset($_GET['order_id'])) {
     $order_id = $_GET['order_id'];
-    $select_data = "SELECT * FROM `orders` WHERE order_id=?";
+    $select_data = "SELECT * FROM orders WHERE order_id=?";
     $stmt = $con->prepare($select_data);
     $stmt->bind_param('i', $order_id);
     $stmt->execute();
@@ -33,15 +33,20 @@ if (isset($_POST['confirm-payment'])) {
     $receiver_address = $_POST['receiver_address'];
     $tracking_number = generateTrackingNumber(); // Automatically generate tracking number
 
-    $insert_query = "INSERT INTO `payment` (order_id, order_number, amnt, payment_mode, shipping_mode) VALUES (?, ?, ?, ?, ?)";
+    // GCash Details
+    $gcash_ref_num = $_POST['gcash_ref_num'];
+    $gcash_account_number = $_POST['gcash_account_number'];
+    $gcash_account_name = $_POST['gcash_account_name'];
+
+    $insert_query = "INSERT INTO payment (order_id, order_number, amnt, payment_mode, shipping_mode) VALUES (?, ?, ?, ?, ?)";
     $stmt = $con->prepare($insert_query);
     $stmt->bind_param('iiiss', $order_id, $order_number, $amnt, $payment_mode, $shipping_mode);
     $result = $stmt->execute();
 
-    // Update orders table with shipping details
-    $update_order_query = "UPDATE `orders` SET tracking_number=?, receiver_name=?, receiver_address=? WHERE order_id=?";
+    // Update orders table with shipping and GCash details
+    $update_order_query = "UPDATE orders SET tracking_number=?, receiver_name=?, receiver_address=?, gcash_ref_num=?, gcash_account_number=?, gcash_account_name=? WHERE order_id=?";
     $stmt = $con->prepare($update_order_query);
-    $stmt->bind_param('sssi', $tracking_number, $receiver_name, $receiver_address, $order_id);
+    $stmt->bind_param('ssssssi', $tracking_number, $receiver_name, $receiver_address, $gcash_ref_num, $gcash_account_number, $gcash_account_name, $order_id);
     $stmt->execute();
 
     if ($result) {
@@ -51,11 +56,12 @@ if (isset($_POST['confirm-payment'])) {
         </script>";
     }
 
-    $update_orders = "UPDATE `orders` SET order_status='Complete' WHERE order_id=?";
+    $update_orders = "UPDATE orders SET order_status='Complete' WHERE order_id=?";
     $stmt = $con->prepare($update_orders);
     $stmt->bind_param('i', $order_id);
     $stmt->execute();
 }
+
 
 // Fetch available shipping methods
 $shipping_methods_query = "SELECT * FROM shipping_methods";
@@ -87,6 +93,17 @@ $shipping_methods = $shipping_methods_result->fetch_all(MYSQLI_ASSOC);
         color: white;
     }
     </style>
+    <script>
+    function toggleGCashFields() {
+        const paymentMode = document.getElementById('payment_mode').value;
+        const gcashFields = document.getElementById('gcash-fields');
+        if (paymentMode === 'Gcash') {
+            gcashFields.style.display = 'block';
+        } else {
+            gcashFields.style.display = 'none';
+        }
+    }
+    </script>
 </head>
 
 <body class="bg-secondary">
@@ -112,11 +129,27 @@ $shipping_methods = $shipping_methods_result->fetch_all(MYSQLI_ASSOC);
             </div>
             <div class="form-outline my-4 text-center w-50 m-auto">
                 <label for="" class="text-light">Select Payment Mode</label>
-                <select name="payment_mode" id="payment_mode" class="form-select w-50 m-auto" required>
+                <select name="payment_mode" id="payment_mode" class="form-select w-50 m-auto" required
+                    onchange="toggleGCashFields()">
                     <option value="">Select Payment Mode</option>
                     <option value="Gcash">Gcash</option>
                     <option value="Cash on Delivery">Cash on Delivery</option>
                 </select>
+            </div>
+
+            <div id="gcash-fields" style="display: none;">
+                <div class="form-outline my-4 text-center w-50 m-auto">
+                    <label for="gcash_reference_number" class="text-light">GCash Reference Number</label>
+                    <input type="text" class="form-control w-50 m-auto" name="gcash_ref_num">
+                </div>
+                <div class="form-outline my-4 text-center w-50 m-auto">
+                    <label for="gcash_account_number" class="text-light">GCash Account Number</label>
+                    <input type="text" class="form-control w-50 m-auto" name="gcash_account_number">
+                </div>
+                <div class="form-outline my-4 text-center w-50 m-auto">
+                    <label for="gcash_account_name" class="text-light">GCash Account Name</label>
+                    <input type="text" class="form-control w-50 m-auto" name="gcash_account_name">
+                </div>
             </div>
 
             <div class="form-outline my-4 text-center w-50 m-auto">
