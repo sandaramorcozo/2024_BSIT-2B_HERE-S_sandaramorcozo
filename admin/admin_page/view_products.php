@@ -53,6 +53,7 @@
                 <th>Product Image</th>
                 <th>Product Price</th>
                 <th>Total Sold</th>
+                <th>Total Amount</th> <!-- New Column -->
                 <th>Status</th>
                 <th>Edit</th>
                 <th>Delete</th>
@@ -60,7 +61,7 @@
         </thead>
         <tbody class="bg-secondary text-light">
             <?php
-$get_products="Select * from `products`";
+$get_products="Select * from products";
 $result=mysqli_query($con,$get_products);
 $number=0;
 while($row=mysqli_fetch_assoc($result)){
@@ -77,12 +78,12 @@ while($row=mysqli_fetch_assoc($result)){
                 <td><img src='./product_images/<?php echo $product_image1;?>' class='product_img' /></td>
                 <td><?php echo '₱' . $product_price; ?></td>
                 <td><?php 
-                $get_count="Select * from `orders_pending` where product_id = $product_id";
+                $get_count="Select * from orders_pending where product_id = $product_id";
                 $result_count=mysqli_query($con,$get_count);
                 $rows_count=mysqli_num_rows($result_count);
                 echo $rows_count;
-                
                 ?></td>
+                <td><?php echo '₱' . ($rows_count * $product_price); ?></td> <!-- Total Amount Calculation -->
                 <td><?php echo $status;?></td>
                 <td><a href='index_admin.php?edit_products=<?php echo $product_id ?>' class='text-light'><i
                             class='fa-solid fa-pen-to-square'></i></a></td>
@@ -92,7 +93,6 @@ while($row=mysqli_fetch_assoc($result)){
             <?php
             }
             ?>
-
         </tbody>
     </table>
 </body>
